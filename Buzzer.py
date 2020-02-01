@@ -70,7 +70,7 @@ class Buzzer():
 			time.sleep(buzzer[i] * 0.5)		# delay a note for beat * 0.5s
 
 	def setup(self):
-		GPIO.setmode(GPIO.BOARD)		# Numbers GPIOs by physical location
+		GPIO.setmode(GPIO.BCM)		# Numbers GPIOs by physical location
 		GPIO.setup(Buzzer[0], GPIO.OUT)	# Set pins' mode is output
 		GPIO.setup(Buzzer[1], GPIO.OUT)	# Set pins' mode is output
 		global buzz_left, buzz_right			# Assign a global variable to replace GPIO.PWM 
