@@ -14,6 +14,8 @@
 
 import RPi.GPIO as GPIO
 import time
+import logging
+import threading
 
 BuzzerList = [11, 12]
 
@@ -102,6 +104,17 @@ class Buzzer():
 
 
 if __name__ == '__main__':		# Program start from here
+	format = "%(asctime)s: %(message)s"
+	logging.basicConfig(format=format, level=logging.INFO,
+						datefmt="%H:%M:%S")
+						
 	buzzer = Buzzer()
-	buzzer.playLeftBuzzer()
+	# buzzer.playLeftBuzzer()
+
+	x = threading.Thread(target=buzzer.playLeftBuzzer, args=())
+	logging.info("Main    : before running playLeftBuzzer")
+	x.start()
+	logging.info("Main    : wait for the playLeftBuzzer to finish")
+	# x.join()
+	logging.info("Main    : all done")
 
