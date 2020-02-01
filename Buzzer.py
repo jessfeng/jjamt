@@ -15,7 +15,7 @@
 import RPi.GPIO as GPIO
 import time
 
-Buzzer = 11
+BuzzerList = [11, 12]
 
 CL = [0, 131, 147, 165, 175, 196, 211, 248]		# Frequency of Low C notes
 
@@ -44,34 +44,64 @@ beat_2 = [	1, 1, 2, 2, 1, 1, 2, 2, 			# Beats of song 2, 1 means 1/8 beats
 			1, 2, 2, 1, 1, 2, 2, 1, 
 			1, 2, 2, 1, 1, 3 ]
 
-def setup():
-	GPIO.setmode(GPIO.BOARD)		# Numbers GPIOs by physical location
-	GPIO.setup(Buzzer, GPIO.OUT)	# Set pins' mode is output
-	global Buzz						# Assign a global variable to replace GPIO.PWM 
-	Buzz = GPIO.PWM(Buzzer, 440)	# 440 is initial frequency.
-	Buzz.start(50)					# Start Buzzer pin with 50% duty ration
+buzz_left = None 
+buzz_right = None
 
-def loop():
-	while True:
-		print '\n    Playing song 1...'
+class Buzzer():
+	def __init__(self):
+		super().__init__()
+		self.setup()	
+
+	def playLeftBuzzer(self):
+		print ('\n    Playing left buzzer...')
+		global buzz_left
+		self.playBuzzer(buzz_left)
+	
+	def playRightBuzzer(self):
+		print ('\n    Playing right buzzer...')
+		global buzz_right
+		self.playBuzzer(buzz_right)
+
+	def playBuzzer(self, buzzer):
 		for i in range(1, len(song_1)):		# Play song 1
-			Buzz.ChangeFrequency(song_1[i])	# Change the frequency along the song note
-			time.sleep(beat_1[i] * 0.5)		# delay a note for beat * 0.5s
-		time.sleep(1)						# Wait a second for next song.
+			buzzer.ChangeFrequency(song_1[i])	# Change the frequency along the song note
+			time.sleep(buzzer[i] * 0.5)		# delay a note for beat * 0.5s
 
-		print '\n\n    Playing song 2...'
-		for i in range(1, len(song_2)):     # Play song 1
-			Buzz.ChangeFrequency(song_2[i]) # Change the frequency along the song note
-			time.sleep(beat_2[i] * 0.5)     # delay a note for beat * 0.5s
+	def setup(self):
+		GPIO.setmode(GPIO.BOARD)		# Numbers GPIOs by physical location
+		GPIO.setup(Buzzer[0], GPIO.OUT)	# Set pins' mode is output
+		GPIO.setup(Buzzer[1], GPIO.OUT)	# Set pins' mode is output
+		global buzz_left, buzz_right			# Assign a global variable to replace GPIO.PWM 
+		buzz_left = GPIO.PWM(Buzzer[0], 440)	# 440 is initial frequency.
+		buzz_right = GPIO.PWM(Buzzer[1], 440)	# 440 is initial frequency.
+		buzz_left.start(50)					# Start Buzzer pin with 50% duty ration
+		buzz_right.start(50)					# Start Buzzer pin with 50% duty ration
 
-def destory():
-	Buzz.stop()					# Stop the buzzer
-	GPIO.output(Buzzer, 1)		# Set Buzzer pin to High
-	GPIO.cleanup()				# Release resource
+	def loop(self):
+		while True:
+			print ('\n    Playing song 1...')
+			for i in range(1, len(song_1)):		# Play song 1
+				buzz_left.ChangeFrequency(song_1[i])	# Change the frequency along the song note
+				time.sleep(buzz_left[i] * 0.5)		# delay a note for beat * 0.5s
+			time.sleep(1)						# Wait a second for next song.
+
+			print ('\n\n    Playing song 2...')
+			for i in range(1, len(song_2)):     # Play song 1
+				buzz_left.ChangeFrequency(song_2[i]) # Change the frequency along the song note
+				time.sleep(buzz_left[i] * 0.5)     # delay a note for beat * 0.5s
+
+	def destory(self):
+		buzz_left.stop()					# Stop the buzzer
+		buzz_right.stop()					# Stop the buzzer
+		GPIO.output(Buzzer[0], 1)		# Set Buzzer pin to High
+		GPIO.output(Buzzer[1], 1)		# Set Buzzer pin to High
+		GPIO.cleanup()				# Release resource
+	
+	def __del__(self, name):
+		self.destory()
+
 
 if __name__ == '__main__':		# Program start from here
-	setup()
-	try:
-		loop()
-	except KeyboardInterrupt:  	# When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
-		destory()
+	buzzer = Buzzer()
+	buzzer.playLeftBuzzer()
+
