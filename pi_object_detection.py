@@ -76,7 +76,7 @@ p.start()
 print("[INFO] starting stream...")
 #cap=cv2.VideoCapture(0)
 vs = VideoStream(usePiCamera=True).start()
-time.sleep(2.0)
+time.sleep(1.0)
 fps=FPS().start()
 area = 0
 my_priority_queue = PriorityQueue(maxsize=0)
@@ -127,8 +127,8 @@ while True:
             
             # only run once 
             if area == 0 and idx == 15 and confidence * 100 > 80:
-                area = (endY-startY)*(endX-startX)
-                my_priority_queue.push(area)
+                area = -(endY-startY)*(endX-startX)
+                my_priority_queue.put(area)
                 continue
                 
             if idx==5 or idx==6 or idx==7 or idx==9 or idx==15:
@@ -138,15 +138,31 @@ while True:
                 y = startY - 15 if startY - 15 > 15 else startY + 15
                 cv2.putText(frame, label, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
                 if (idx==15) and confidence * 100 > 80:
-                    current_area = (endY-startY)*(endX-startX)
-                    largest_area = my_priority_queue.get()
+                    current_area = -(endY-startY)*(endX-startX)
+                    # my_priority_queue.put(current_area)
                     
-                    if largest_area != current_area:
-                        print("last area is {}".format(last_area))
-                        print("current area is {}".format(area))
-                        print("different area is {}".format(last_area - area))
+                    largest_area = my_priority_queue.get()
+                    print("The ratio of largest area is {}". format(largest_area / (300*300)))
+                    
+                    if (-current_area > -largest_area and -current_area > 300 * 300 / 3):
+                        print("Danger!!")
+                        #print("last area is {}".format(current_area))
+                        area = 0
+                    elif (-current_area < -largest_area and -largest_area > 300 * 300 / 3):
+                        print("less Danger!!")
+                        #print("last area is {}".format(largest_area))
+                        area = 0
+                        my_priority_queue.put(current_area)
+                    elif (-current_area > -largest_area and -current_area < 300 * 300 / 3):
+                        my_priority_queue.put(largest_area)
                         
-                    my_priority_queue.push(current_area)
+                    else:
+                        #print("last area is {}".format(largest_area))
+                        #print("current area is {}".format(current_area))
+                        #print("different area is {}".format(largest_area - current_area))
+                        my_priority_queue.put(current_area)
+                        # my_priority_queue.put(current_area)
+                        
                     
                     # if (((endY-startY)*(endX-startX))) > 45000 and (areaBef != -99) and (((endY-startY)*(endX-startX))/(areaBef) > 1.2):
                         # print("RUN!!!")
