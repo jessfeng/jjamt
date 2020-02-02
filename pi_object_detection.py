@@ -6,6 +6,7 @@ from imutils.video import VideoStream
 from imutils.video import FPS
 from multiprocessing import Process
 from multiprocessing import Queue
+from queue import PriorityQueue
 from picamera import PiCamera
 import numpy as np
 import argparse
@@ -47,8 +48,10 @@ args = vars(ap.parse_args())
 
 
 #initialization
-CLASSES = ["background", "bicycle", "bus", "car", "motorcycle",
-"person"]
+CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
+	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+	"sofa", "train", "tvmonitor"]
 COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3));
 
 #load serialized model from disk (neural network model)
@@ -75,6 +78,8 @@ print("[INFO] starting stream...")
 vs = VideoStream(usePiCamera=True).start()
 time.sleep(2.0)
 fps=FPS().start()
+area = 0
+my_priority_queue = PriorityQueue(maxsize=0)
 
 #loop over frames of vid stream
 while True:
@@ -111,30 +116,56 @@ while True:
             # the `detections`, then compute the (x, y)-coordinates
             # of the bounding box for the object
             idx = int(detections[0, 0, i, 1])
-            print(idx)
             dims = np.array([fW, fH, fW, fH])
             box = detections[0, 0, i, 3:7] * dims
+            # if (idx==15) and confidence * 100 > 90:
+                # try:
+                    # areaBef = ((endY-startY)*(endX-startX))
+                # except:
+                    # areaBef = -99;
             (startX, startY, endX, endY) = box.astype("int")
-
-            # draw the prediction on the frame
-            label = "{}: {:.2f}%".format(CLASSES[5],confidence * 100)
-            cv2.rectangle(frame, (startX, startY), (endX, endY), COLORS[5], 2)
-            y = startY - 15 if startY - 15 > 15 else startY + 15
-            cv2.putText(frame, label, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[5], 2)
+            
+            # only run once 
+            if area == 0 and idx == 15 and confidence * 100 > 80:
+                area = (endY-startY)*(endX-startX)
+                my_priority_queue.push(area)
+                continue
+                
+            if idx==5 or idx==6 or idx==7 or idx==9 or idx==15:
+                # draw the prediction on the frame
+                label = "{}: {:.2f}%".format(CLASSES[idx],confidence * 100)
+                cv2.rectangle(frame, (startX, startY), (endX, endY), COLORS[idx], 2)
+                y = startY - 15 if startY - 15 > 15 else startY + 15
+                cv2.putText(frame, label, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
+                if (idx==15) and confidence * 100 > 80:
+                    current_area = (endY-startY)*(endX-startX)
+                    largest_area = my_priority_queue.get()
+                    
+                    if largest_area != current_area:
+                        print("last area is {}".format(last_area))
+                        print("current area is {}".format(area))
+                        print("different area is {}".format(last_area - area))
+                        
+                    my_priority_queue.push(current_area)
+                    
+                    # if (((endY-startY)*(endX-startX))) > 45000 and (areaBef != -99) and (((endY-startY)*(endX-startX))/(areaBef) > 1.2):
+                        # print("RUN!!!")
+                        # print(CLASSES[idx])
+                        # print ("end: " + str((endY-startY)*(endX-startX)))
+                        # print ("beg: " + str(areaBef))
+                   
             cv2.imshow("Frame", frame)
             cv2.waitKey(5)
             key = cv2.waitKey(5)
             
             
-            #if (((endY-startY)*(endX-startX))) > 10000 and ((startY-y)*(startX-x)):
-                #print(1)
-
             # if the `q` key was pressed, break from the loop
             if key == ord("q"):
                 break
 
             # update the FPS counter
             fps.update()
+    time.sleep(0.1)
 
 # stop the timer and display FPS information
 fps.stop()
