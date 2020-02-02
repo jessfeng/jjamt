@@ -18,6 +18,7 @@ import logging
 import threading
 
 BuzzerList = [11, 12]
+LED = [20,21]
 
 CL = [0, 131, 147, 165, 175, 196, 211, 248]		# Frequency of Low C notes
 
@@ -48,36 +49,87 @@ beat_2 = [	1, 1, 2, 2, 1, 1, 2, 2, 			# Beats of song 2, 1 means 1/8 beats
 
 buzz_left = None 
 buzz_right = None
+global led_on, buzzer_on
 
 class Buzzer():
 	def __init__(self):
 		super().__init__()
-		self.setup()	
+		self.setup()
+		global led_on, buzzer_on
+		led_on = False	
+		buzzer_on = False
 
 	def playLeftBuzzer(self):
 		print ('\n    Playing left buzzer...')
-		global buzz_left
-		self.playBuzzer(buzz_left)
+		self.playBuzzer(BuzzerList[0])
 	
 	def playRightBuzzer(self):
 		print ('\n    Playing right buzzer...')
-		global buzz_right
-		self.playBuzzer(buzz_right)
+		self.playBuzzer(BuzzerList[1])
 
 	def playBuzzer(self, buzzer):
-		for i in range(1, len(song_1)):		# Play song 1
-			buzzer.ChangeFrequency(song_1[i])	# Change the frequency along the song note
-			time.sleep(buzzer[i] * 0.5)		# delay a note for beat * 0.5s
+		global buzzer_on
+		buzzer_on = True
+		start_time = time.time()
+		while buzzer_on:
+			GPIO.output(buzzer,GPIO.HIGH)
+			print("beeep")
+			GPIO.output(buzzer,GPIO.LOW)
+			print("noooo")
+			time.sleep(0.1)
+			end_time = time.time()
+			if (end_time - start_time > 2):
+				 buzzer_on = False
+				
+	def closeBuzzer(self):
+		global buzzer_on
+		buzzer_on = False
 
+	
+	def lightLeftLED(self):
+		a=0
+		self.dc = 50
+		self.p.ChangeDutyCycle(self.dc)
+		
+		global led_on
+		led_on = True
+		start_time = time.time()
+		while led_on:
+			a +=1
+			if ( a == 5):
+				self.freq += 5
+				self.p.ChangeFrequency(self.freq)
+			time.sleep(1)
+			# print(freq)
+			end_time = time.time()
+			if (end_time - start_time > 1): 
+				led_on = False
+				self.dc = 0
+				self.p.ChangeDutyCycle(self.dc)
+	
+	def closeLED(self):		
+		global led_on
+		led_on = False
+	
 	def setup(self):
+		GPIO.setwarnings(False)
 		GPIO.setmode(GPIO.BCM)		# Numbers GPIOs by physical location
-		GPIO.setup(Buzzer[0], GPIO.OUT)	# Set pins' mode is output
-		GPIO.setup(Buzzer[1], GPIO.OUT)	# Set pins' mode is output
-		global buzz_left, buzz_right			# Assign a global variable to replace GPIO.PWM 
-		buzz_left = GPIO.PWM(Buzzer[0], 440)	# 440 is initial frequency.
-		buzz_right = GPIO.PWM(Buzzer[1], 440)	# 440 is initial frequency.
-		buzz_left.start(50)					# Start Buzzer pin with 50% duty ration
-		buzz_right.start(50)					# Start Buzzer pin with 50% duty ration
+		GPIO.setup(BuzzerList[0], GPIO.OUT)	# Set pins' mode is output
+		GPIO.setup(BuzzerList[1], GPIO.OUT)	# Set pins' mode is output
+		# global buzz_left, buzz_right			# Assign a global variable to replace GPIO.PWM 
+		# buzz_left = GPIO.PWM(BuzzerList[0], 440)	# 440 is initial frequency.
+		# buzz_right = GPIO.PWM(BuzzerList[1], 10)	# 440 is initial frequency.
+		# buzz_left.start(50)					# Start Buzzer pin with 50% duty ration
+		# buzz_right.start(50)					# Start Buzzer pin with 50% duty ration
+		
+		# LED
+		GPIO.setup(LED[0], GPIO.OUT)  # Set GPIO pin 12 to output mode.
+		self.freq = 10
+		self.p = GPIO.PWM(LED[0], self.freq)   # Initialize PWM on pwmPin 40Hz frequency
+
+		# main loop of program   
+		self.dc = 0
+		self.p.start(self.dc)                      # Start PWM with 0% duty cycle                         
 
 	def loop(self):
 		while True:
@@ -91,15 +143,35 @@ class Buzzer():
 			for i in range(1, len(song_2)):     # Play song 1
 				buzz_left.ChangeFrequency(song_2[i]) # Change the frequency along the song note
 				time.sleep(buzz_left[i] * 0.5)     # delay a note for beat * 0.5s
+	
+	def execute(self, command):
+		global buzzer_on, led_on
+		if (command == "playLeftBuzzer" and buzzer_on == False):
+			t1 = threading.Thread(target=self.playLeftBuzzer, args=())
+			t1.start()
+		elif (command == "playRightBuzzer" and buzzer_on == False):
+			t2 = threading.Thread(target=self.playRightBuzzer, args=())
+			t2.start()
+		elif (command == "lightLeftLED" and led_on == False):
+			t3 = threading.Thread(target=self.lightLeftLED, args=())
+			t3.start()
+		# elif (command == "lightRightLED" and led_on == False):
+			# t1 = threading.Thread(target=self.lightRightLED, args=())
+			# t1.start()
+		else:
+			print("Buzzer is on")
 
 	def destory(self):
-		buzz_left.stop()					# Stop the buzzer
-		buzz_right.stop()					# Stop the buzzer
-		GPIO.output(Buzzer[0], 1)		# Set Buzzer pin to High
-		GPIO.output(Buzzer[1], 1)		# Set Buzzer pin to High
+		# global buzz_left, buzz_right
+		# buzz_left.stop()					# Stop the buzzer
+		# buzz_right.stop()					# Stop the buzzer
+		# GPIO.output(Buzzer[0], 1)		# Set Buzzer pin to High
+		# GPIO.output(Buzzer[1], 1)		# Set Buzzer pin to High
+		# GPIO.output(LED[1], 1)		# Set Buzzer pin to High
+		# GPIO.output(LED[1], 1)		# Set Buzzer pin to High
 		GPIO.cleanup()				# Release resource
 	
-	def __del__(self, name):
+	def __del__(self):
 		self.destory()
 
 
@@ -111,10 +183,20 @@ if __name__ == '__main__':		# Program start from here
 	buzzer = Buzzer()
 	# buzzer.playLeftBuzzer()
 
-	x = threading.Thread(target=buzzer.playLeftBuzzer, args=())
+	t1 = threading.Thread(target=buzzer.playRightBuzzer, args=())
 	logging.info("Main    : before running playLeftBuzzer")
-	x.start()
+	t1.start()
 	logging.info("Main    : wait for the playLeftBuzzer to finish")
 	# x.join()
 	logging.info("Main    : all done")
+	
+	t2 = threading.Thread(target=buzzer.lightLeftLED, args=())
+	t2.start()
+	
+	
+	time.sleep(5)
+	# t3 = threading.Thread(target=buzzer.closeLED, args=())
+	# t3.start()
+	# t4 = threading.Thread(target=buzzer.closeBuzzer, args=())
+	# t4.start()
 

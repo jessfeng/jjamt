@@ -8,11 +8,14 @@ from multiprocessing import Process
 from multiprocessing import Queue
 from queue import PriorityQueue
 from picamera import PiCamera
+import threading
 import numpy as np
 import argparse
 import imutils
 import time
 import cv2
+
+from Buzzer import Buzzer
 
 #if frame has what we're looking for or not
 #net = the neural network obj
@@ -81,6 +84,20 @@ fps=FPS().start()
 area = 0
 my_priority_queue = PriorityQueue(maxsize=0)
 
+buzzer = Buzzer()
+# playRightBuzzer = threading.Thread(target=buzzer.playRightBuzzer, args=())
+# lightLeftLED = threading.Thread(target=buzzer.lightLeftLED, args=())
+# closeBuzzer = threading.Thread(target=buzzer.closeBuzzer, args=())
+# closeLED = threading.Thread(target=buzzer.closeLED, args=())
+
+# def danger(isTrue):
+    # if (isTrue):
+        # playRightBuzzer.start()
+        # lightLeftLED.start()
+    # else:
+        # closeBuzzer.start()
+        # closeLED.start()
+
 #loop over frames of vid stream
 while True:
     #grab frame from threaded vidstream, resize + dimensions!!
@@ -146,13 +163,18 @@ while True:
                     
                     if (-current_area > -largest_area and -current_area > 300 * 300 / 3):
                         print("Danger!!")
+                        buzzer.execute("playRightBuzzer")
+                        buzzer.execute("lightLeftLED")
                         #print("last area is {}".format(current_area))
                         area = 0
+                        
                     elif (-current_area < -largest_area and -largest_area > 300 * 300 / 3):
                         print("less Danger!!")
+                        buzzer.execute("lightLeftLED")
                         #print("last area is {}".format(largest_area))
                         area = 0
                         my_priority_queue.put(current_area)
+                        
                     elif (-current_area > -largest_area and -current_area < 300 * 300 / 3):
                         my_priority_queue.put(largest_area)
                         
@@ -181,7 +203,7 @@ while True:
 
             # update the FPS counter
             fps.update()
-    time.sleep(0.1)
+    time.sleep(0.3)
 
 # stop the timer and display FPS information
 fps.stop()
