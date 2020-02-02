@@ -1,9 +1,10 @@
 import threading
-from Queue import Queue
+import numpy
+from queue import Queue
 
 from ImageReceiver import ImageReceiver
 from ObjectDetector import ObjectDetector
-from AlertProcessor import AlertProcessor
+# from AlertProcessor import AlertProcessor
 
 class Master():
     def __init__(self):
@@ -11,12 +12,12 @@ class Master():
 
         self.ImageReceiver = ImageReceiver()
         self.ObjectDetector = ObjectDetector()
-        self.AlertProcessor = AlertProcessor()
+        # self.AlertProcessor = AlertProcessor()
 
         self.ImageQueue = Queue()
-        self.ObjectQueue = Queue()
+        # self.ObjectQueue = Queue()
 
-        objects = []
+        self.objects = []
 
     def createObjects(self):
         self.objects.append(threading.Thread(target=self.ImageReceiver.execute, args=(self.ImageQueue, )))

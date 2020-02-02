@@ -102,7 +102,7 @@ buzzer = Buzzer()
 while True:
     #grab frame from threaded vidstream, resize + dimensions!!
     frame = vs.read()
-    frame = cv2.rotate(frame,cv2.ROTATE_180)
+    # frame = cv2.rotate(frame,cv2.ROTATE_180)
     #ret, frame = cap.read()
     frame = imutils.resize(frame, width=400)
     (fH, fW) = frame.shape[:2]
@@ -159,7 +159,7 @@ while True:
                     # my_priority_queue.put(current_area)
                     
                     largest_area = my_priority_queue.get()
-                    print("The ratio of largest area is {}". format(largest_area / (300*300)))
+                    # print("The ratio of largest area is {}". format(largest_area / (300*300)))
                     
                     if (-current_area > -largest_area and -current_area > 300 * 300 / 3):
                         print("Danger!!")
@@ -192,7 +192,7 @@ while True:
                         # print ("end: " + str((endY-startY)*(endX-startX)))
                         # print ("beg: " + str(areaBef))
                    
-            cv2.imshow("Frame", frame)
+            #cv2.imshow("Frame", frame)
             cv2.waitKey(5)
             key = cv2.waitKey(5)
             

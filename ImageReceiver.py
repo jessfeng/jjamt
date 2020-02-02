@@ -15,14 +15,19 @@ import cv2
 
 class ImageReceiver():
     def __init__(self):
-		super().__init__()
+        super().__init__()
+        self.vs = None
 
     def execute(self, ImageQueue):
-        vs = VideoStream(usePiCamera=True).start()
+        self.vs = VideoStream(usePiCamera=True).start()
 
         while True:
-            frame = vs.read()
-            frame = cv2.rotate(frame,cv2.ROTATE_180)
+            frame = self.vs.read()
+            # print(frame)
+            if frame is None:
+                continue
+                
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
             #ret, frame = cap.read()
             frame = imutils.resize(frame, width=400)
             ImageQueue.put(frame)

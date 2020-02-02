@@ -18,44 +18,47 @@ from Buzzer import Buzzer
 
 class ObjectDetector():
     def __init__(self):
-		super().__init__()
+        super().__init__()
 
         #initialization
-        CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
+        self.CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
             "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
             "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
             "sofa", "train", "tvmonitor"]
-        COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3));
+        self.COLORS = np.random.uniform(0, 255, size=(len(self.CLASSES), 3));
 
-        args = {"prototxt": , "model": , "confidence": }
+        # python3 pi_object_detection.py --prototxt MobileNetSSD_deploy.prototxt.txt --model MobileNetSSD_deploy.caffemodel
+        self.args = {"prototxt": "MobileNetSSD_deploy.prototxt.txt",
+                    "model": "MobileNetSSD_deploy.caffemodel", 
+                    "confidence": 0 }
 
         #load serialized model from disk (neural network model)
         print("[INFO] loading model...")
         #IDK
-        net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
+        self.net = cv2.dnn.readNetFromCaffe(self.args["prototxt"], self.args["model"])
         
         #init input queue (frames), output queues (detections) + list of actual
         #detections returned by child process
-        inputQueue = Queue(maxsize=1) #populated by parent, processed by child
-        outputQueue = Queue(maxsize=1) #populated by child, processed by parent (output from processing input)
-        detections=None
+        self.inputQueue = Queue(maxsize=1) #populated by parent, processed by child
+        self.outputQueue = Queue(maxsize=1) #populated by child, processed by parent (output from processing input)
+        self.detections=None
 
         #construct child process *independent* from main process of execution
         print("[INFO] starting process...")
-        p = Process(target=classify_frame, args=(net, inputQueue, outputQueue,))
+        p = Process(target=self.classify_frame, args=(self.net, self.inputQueue, self.outputQueue,))
         p.daemon = True
         p.start()
 
-        #init video stream, allow camera warmup + init FPS counter
+        # init video stream, allow camera warmup + init FPS counter
         print("[INFO] starting stream...")
-        #cap=cv2.VideoCapture(0)
-        vs = VideoStream(usePiCamera=True).start()
+        # cap=cv2.VideoCapture(0)
+        # vs = VideoStream(usePiCamera=True).start()
         time.sleep(1.0)
-        fps=FPS().start()
-        area = 0
-        my_priority_queue = PriorityQueue(maxsize=0)
+        self.fps = FPS().start()
+        self.area = 0
+        self.my_priority_queue = PriorityQueue(maxsize=0)
 
-        buzzer = Buzzer()
+        self.buzzer = Buzzer()
 
     def execute(self, ImageQueue):
         while True:
@@ -64,6 +67,9 @@ class ObjectDetector():
             # frame = cv2.rotate(frame,cv2.ROTATE_180)
             # #ret, frame = cap.read()
             # frame = imutils.resize(frame, width=400)
+            if ImageQueue.empty():
+                continue
+                
             frame = ImageQueue.get()
             (fH, fW) = frame.shape[:2]
 
@@ -72,17 +78,17 @@ class ObjectDetector():
                 self.inputQueue.put(frame)
             #if output queue IS NOT empty, grab detections
             if not self.outputQueue.empty():
-                detections = self.outputQueue.get()
+                self.detections = self.outputQueue.get()
 
             
             #check to see if detections are not None (if None, draw detections on frame)
-            if detections is not None:
+            if self.detections is not None:
                 #ret, img=cap.read()
                 #loop over detections
-                for i in np.arange(0, detections.shape[2]):
+                for i in np.arange(0, self.detections.shape[2]):
                     # extract the confidence (i.e., probability) associated
                     # with the prediction
-                    confidence = detections[0, 0, i, 2]
+                    confidence = self.detections[0, 0, i, 2]
 
                     # filter out weak detections by ensuring the `confidence`
                     # is greater than the minimum confidence
@@ -92,9 +98,9 @@ class ObjectDetector():
                     # otherwise, extract the index of the class label from
                     # the `detections`, then compute the (x, y)-coordinates
                     # of the bounding box for the object
-                    idx = int(detections[0, 0, i, 1])
+                    idx = int(self.detections[0, 0, i, 1])
                     dims = np.array([fW, fH, fW, fH])
-                    box = detections[0, 0, i, 3:7] * dims
+                    box = self.detections[0, 0, i, 3:7] * dims
                     # if (idx==15) and confidence * 100 > 90:
                         # try:
                             # areaBef = ((endY-startY)*(endX-startX))
@@ -167,19 +173,19 @@ class ObjectDetector():
 
     def classify_frame(self, net, inputQueue, outputQueue):
         while True:
-        #check if frame present in input queue
-        if not inputQueue.empty():
-            #grab frame from input queue, resize, + construct blob from it
-            frame = inputQueue.get()
-            frame = cv2.resize(frame, (300,300))
-            blob = cv2.dnn.blobFromImage(frame, 0.007843, (300,300), 127.5) #image, scalefactor, size, mean)
+            #check if frame present in input queue
+            if not inputQueue.empty():
+                #grab frame from input queue, resize, + construct blob from it
+                frame = inputQueue.get()
+                frame = cv2.resize(frame, (300,300))
+                blob = cv2.dnn.blobFromImage(frame, 0.007843, (300,300), 127.5) #image, scalefactor, size, mean)
 
-            #set blob as input to deep learning obj (net) + obtain detections
-            net.setInput(blob)
-            detections = net.forward()
+                #set blob as input to deep learning obj (net) + obtain detections
+                net.setInput(blob)
+                detections = net.forward()
 
-            #write detections to output queue
-            outputQueue.put(detections)
+                #write detections to output queue
+                outputQueue.put(detections)
     
     def __del__(self):
         # stop the timer and display FPS information

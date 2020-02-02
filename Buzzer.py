@@ -107,6 +107,27 @@ class Buzzer():
 				self.dc = 0
 				self.p.ChangeDutyCycle(self.dc)
 	
+	def lightRightLED(self):
+		a=0
+		self.dc2 = 50
+		self.p2.ChangeDutyCycle(self.dc2)
+		
+		global led_on
+		led_on = True
+		start_time = time.time()
+		while led_on:
+			a +=1
+			if ( a == 5):
+				self.freq += 5
+				self.p2.ChangeFrequency(self.freq)
+			time.sleep(1)
+			# print(freq)
+			end_time = time.time()
+			if (end_time - start_time > 1): 
+				led_on = False
+				self.dc2 = 0
+				self.p2.ChangeDutyCycle(self.dc2)
+	
 	def closeLED(self):		
 		global led_on
 		led_on = False
@@ -124,12 +145,16 @@ class Buzzer():
 		
 		# LED
 		GPIO.setup(LED[0], GPIO.OUT)  # Set GPIO pin 12 to output mode.
+		GPIO.setup(LED[1], GPIO.OUT)  # Set GPIO pin 12 to output mode.
 		self.freq = 10
 		self.p = GPIO.PWM(LED[0], self.freq)   # Initialize PWM on pwmPin 40Hz frequency
+		self.p2 = GPIO.PWM(LED[1], self.freq)   # Initialize PWM on pwmPin 40Hz frequency
 
 		# main loop of program   
 		self.dc = 0
+		self.dc2 = 0
 		self.p.start(self.dc)                      # Start PWM with 0% duty cycle                         
+		self.p2.start(self.dc2)                      # Start PWM with 0% duty cycle                         
 
 	def loop(self):
 		while True:
@@ -150,11 +175,17 @@ class Buzzer():
 			t1 = threading.Thread(target=self.playLeftBuzzer, args=())
 			t1.start()
 		elif (command == "playRightBuzzer" and buzzer_on == False):
+			print("Buzzer ON")
+			t1 = threading.Thread(target=self.playLeftBuzzer, args=())
+			t1.start()
 			t2 = threading.Thread(target=self.playRightBuzzer, args=())
 			t2.start()
 		elif (command == "lightLeftLED" and led_on == False):
+			print("LED ON")
 			t3 = threading.Thread(target=self.lightLeftLED, args=())
 			t3.start()
+			t4 = threading.Thread(target=self.lightRightLED, args=())
+			t4.start()
 		# elif (command == "lightRightLED" and led_on == False):
 			# t1 = threading.Thread(target=self.lightRightLED, args=())
 			# t1.start()
