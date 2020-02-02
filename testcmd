@@ -1,1 +1,0 @@
-sudo python3 Desktop/jjamt/pi_object_detection.py --prototxt Desktop/jjamt/MobileNetSSD_deploy.prototxt.txt --model Desktop/jjamt/MobileNetSSD_deploy.caffemodel
