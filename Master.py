@@ -20,8 +20,8 @@ class Master():
 
     def createObjects(self):
         self.objects.append(threading.Thread(target=self.ImageReceiver.execute, args=(self.ImageQueue, )))
-        self.objects.append(threading.Thread(target=self.ObjectDetector.execute, args=(self.ImageQueue, self.ObjectQueue, )))
-        self.objects.append(threading.Thread(target=self.AlertProcessor.execute, args=(self.ObjectQueue, )))
+        self.objects.append(threading.Thread(target=self.ObjectDetector.execute, args=(self.ImageQueue, )))
+        # self.objects.append(threading.Thread(target=self.AlertProcessor.execute, args=(self.ObjectQueue, )))
 
     def start(self):
         for any_objects in self.objects:
