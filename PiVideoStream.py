@@ -1,6 +1,6 @@
 #import the necessary packages
 from picamera.array import PiRGBArray
-frmo picamera import PiCamera
+from picamera import PiCamera
 from threading import Thread
 import cv2
 
@@ -11,7 +11,7 @@ camera.framerate = 32
 rawCapture = PiRGBArray(camera, size=(640, 480))
 
 # allow the camera to warmup
-time.sleep(0.1)
+time.sleep(1.1)
 
 # capture frames from the camera
 for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -27,5 +27,5 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
     rowCapture.truncate(0)
 
     #if the 'q' key was pressed, break from the loop
-    if key == ord("q")
+    if key == ord("q"):
         break
